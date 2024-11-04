@@ -1,0 +1,97 @@
+﻿@inject HttpClient _httpClient
+@inject NavigationManager NavigationManager
+@inject ILogger<CustomerDataGridViewComponent> _logger
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject CustomSnackbarService CustomSnackbar
+
+<MudPaper Style="padding: 2em;" Elevation="0">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" Class="py-3">
+        <MudText Typo="Typo.h6" Color="Color.Inherit">Customers</MudText>
+        <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.PersonAdd" Size="Size.Small" Color="Color.Primary" @onclick="HandleAddCustomer">Add Customer</MudButton>
+    </MudStack>
+
+    <MudDataGrid Items="@customers" Filterable="true" SortMode="@SortMode.Single"
+                 Groupable="false" ColumnResizeMode="ResizeMode.Column">
+        <Columns>
+            <PropertyColumn Property="x => x.FirstName" />
+            <PropertyColumn Property="x => x.LastName" />
+            <PropertyColumn Property="x => x.EmailAddress" />
+            <PropertyColumn Property="x => x.PhoneNumber" />
+            <PropertyColumn Property="x => x.BusinessName" />
+            <TemplateColumn CellClass="d-flex justify-end" Filterable="false">
+                <CellTemplate>
+                    <MudStack Row>
+                        <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Details" Color="Color.Info" Size="Size.Small">Details</MudButton> |
+                        <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Edit" Color="Color.Success" Size="Size.Small" @onclick="() => HandleEditCustomer(context.Item.Id)">Edit</MudButton> |
+                        <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small">Delete</MudButton>
+                    </MudStack>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </MudDataGrid>
+</MudPaper>
+
+<style>
+    .blur-background {
+        backdrop-filter: blur(5px);
+    }
+</style>
+
+@code {
+    private IEnumerable<CustomerListDto> customers { get; set; } = [];
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCustomers();
+    }
+
+    private async Task LoadCustomers()
+    {
+        errorMessage = null!;
+
+        try
+        {
+            var result = await _httpClient.GetFromJsonAsync<IEnumerable<CustomerListDto>>("/api/customers");
+            customers = result ?? new List<CustomerListDto>();
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            Snackbar.Add("No Customers Found In The Database. Please Contact Your Administrator.", Severity.Warning);
+            CustomSnackbar.Add("No Customers Found In The Database. Please Contact Your Administrator.", Severity.Warning);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"An unexpected error occurred: Server Error. Please Contact Your Administrator.", Severity.Error);
+            CustomSnackbar.Add($"An unexpected error occurred: Server Error. Please Contact Your Administrator.", Severity.Error);
+            _logger.LogError(ex, errorMessage);
+        }
+    }
+
+    private async Task HandleAddCustomer()
+    {
+        var parameters = new DialogParameters();
+        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "blur-background" };
+        var dialog = DialogService.Show<CustomerAddDialog>("Add Customer", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            await LoadCustomers();
+        }
+    }
+
+    private async Task HandleEditCustomer(int id)
+    {
+        var parameters = new DialogParameters { ["CustomerId"] = id };
+        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "blur-background" };
+        var dialog = DialogService.Show<CustomerEditDialog>("Update Customer", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            await LoadCustomers();
+        }
+    }
+}

@@ -1,0 +1,140 @@
+﻿@page "/customers/update/{id:int}"
+@inject HttpClient _httpClient
+@inject NavigationManager NavigationManager
+@inject ILogger<CustomerEditView> _logger
+
+<PageTitle>Edit Customer</PageTitle>
+
+<div class="container-fluid row">
+    <div class="h3 col-10">
+        <h3>Edit Customer</h3>
+    </div>
+    <div class="col-2">
+        <button class="btn btn-primary btn-sm" @onclick="NavigateToCustomerList">Return To List</button>
+    </div>
+</div>
+<div class="container-fluid">
+    @if (customer is not null)
+    {
+        <div class="form-floating">
+            <EditForm Model="customer" OnValidSubmit="HandleValidSubmit" FormName="edit-customer" Enhance="true">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                    <div class="col-md-6 mt-2">
+                        <div class="input-group">
+                            <span class="input-group-text">First Name</span>
+                            <InputText class="form-control" @bind-Value="customer.FirstName" />
+                        </div>
+                    </div>
+                    <div class="col-md-6 mt-2">
+                        <div class="input-group">
+                            <span class="input-group-text">Last Name</span>
+                            <InputText class="form-control" @bind-Value="customer.LastName" />
+                        </div>
+                    </div>
+
+                
+                    <div class="col-md-6 mt-2">
+                        <div class="input-group">
+                            <span class="input-group-text">Email Address</span>
+                            <InputText class="form-control" @bind-Value="customer.EmailAddress" />
+                        </div>
+                    </div>
+                    <div class="col-md-6 mt-2">
+                        <div class="input-group">
+                            <span class="input-group-text">Phone Number</span>
+                            <InputText class="form-control" @bind-Value="customer.PhoneNumber" />
+                        </div>
+                    </div>
+
+                
+                    <div class="col-md-4 mt-2">
+                        <div class="form-group mt-2">
+                            <input class="form-check-input" type="checkbox" value="" id="IsBusinessCustomer" @bind="customer.IsBusinessCustomer" />
+                            <label class="form-check-label" for="IsBusinessCustomer">
+                                Business Customer
+                            </label>
+                        </div>
+                        <div class="col-md-6 mt-2">
+                            <div class="input-group">
+                                <span class="input-group-text">Business Name</span>
+                                <InputText class="form-control" @bind-Value="customer.BusinessName" />
+                            </div>
+                        </div>
+                    </div>
+
+                
+                    <div class="btn-group mt-3">
+                        <button type="submit" class="btn btn-primary btn-sm">Save</button> &nbsp;
+                        <button type="reset" class="btn btn-secondary btn-sm">Clear Form</button> &nbsp;
+                        <a href="/customers" class="btn btn-danger btn-sm">Cancel</a>
+                    </div>
+                
+                
+            </EditForm>
+        </div>
+    }
+    else if (errorMessage is not null)
+    {
+        <div class="alert alert-danger" role="alert">
+            <p>@errorMessage</p>
+        </div>
+    }
+    else
+    {
+        <p>Loading...</p>
+    }
+</div>
+@code {
+    private STCustomer? customer { get; set; }
+    private string? errorMessage;
+    [Parameter] public int id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/customers/{id}");
+            if (response.IsSuccessStatusCode)
+            {
+                customer = await response.Content.ReadFromJsonAsync<STCustomer>();
+            }
+            else
+            {
+                errorMessage = $"Failed to load customer with id {id}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogCritical(ex, "Failed to load customer with id {id}", id);
+            errorMessage = $"An unexpected error occurred: Server Error. Please Contact Your Administrator.";
+        }
+
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            var response = await _httpClient.PutAsJsonAsync<STCustomer>($"api/customers/{id}", customer!);
+            if (response.IsSuccessStatusCode)
+            {
+                NavigationManager.NavigateTo("/customers");
+            }
+            else
+            {
+                errorMessage = "Failed to update customer";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogCritical(ex, "Failed to update customer with id {id}", id);
+            errorMessage = $"An unexpected error occurred: Server Error. Please Contact Your Administrator.";
+        }
+    }
+
+    private void NavigateToCustomerList()
+    {
+        NavigationManager.NavigateTo("/customers");
+    }
+}

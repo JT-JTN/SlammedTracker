@@ -1,0 +1,70 @@
+﻿@inject HttpClient _httpClient
+@inject ILogger<CustomerAddDialog> _logger
+@inject ISnackbar Snackbar
+@inject CustomSnackbarService CustomSnackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm>
+            <MudInputLabel>First Name:</MudInputLabel>
+            <MudInput Label="First Name" AutoFocus="true" @bind-Value="customer.FirstName" />
+            <MudInputLabel>Last Name</MudInputLabel>
+            <MudInput Label="Last Name:" @bind-Value="customer.LastName" />
+            <MudInputLabel>Email Address</MudInputLabel>
+            <MudInput Label="Email Address:" @bind-Value="customer.EmailAddress" />
+            <MudSwitch Label="Business Customer" @bind-Value="customer.IsBusinessCustomer" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton StartIcon="@Icons.Material.Filled.Save" Color="Color.Primary" OnClick="Submit">Save</MudButton>
+        <MudButton StartIcon="@Icons.Material.Filled.Refresh" Color="Color.Secondary" OnClick="Refresh">Refresh</MudButton>
+        <MudButton StartIcon="@Icons.Material.Filled.Cancel" Color="Color.Error" OnClick="Cancel">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private MudDialogInstance? MudDialog { get; set; }
+    private CustomerAddDto customer = new CustomerAddDto();
+    [Parameter]
+    public EventCallback<bool> OnDialogClose { get; set; }
+
+    private async void Submit()
+    {
+        try
+        {
+            var results = await _httpClient.PostAsJsonAsync("/api/customers", customer);
+            if (results.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Customer added successfully!", Severity.Success);
+                CustomSnackbar.Add("Customer added successfully!", Severity.Success);
+                await OnDialogClose.InvokeAsync(true);
+                MudDialog?.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                Snackbar.Add("Failed to add customer. Please try again.", Severity.Warning);
+                CustomSnackbar.Add("Failed to add customer. Please try again.", Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogCritical("Failed adding customer: {Message}", ex.Message);
+            Snackbar.Add("An unexpected error occurred. Please contact your administrator.", Severity.Error);
+            CustomSnackbar.Add("An unexpected error occurred. Please contact your administrator.", Severity.Error);
+            Refresh();
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog?.Cancel();
+        OnDialogClose.InvokeAsync(false);
+    }
+
+    private void Refresh()
+    {
+        customer = new CustomerAddDto();
+        StateHasChanged();
+    }
+}

@@ -1,0 +1,98 @@
+﻿@inherits LayoutComponentBase
+@rendermode InteractiveWebAssembly
+
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="1">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" @onclick="DrawerToggle" />
+        <MudText Typo="Typo.h5" Class="ml-3">SlammedTracker</MudText>
+        <MudSpacer />
+        @if (snackbarMessages.Any())
+        {
+            <MudBadge Content="snackbarMessages.Count" Origin="Origin.TopRight" Bordered="true" Overlap="true" Class="mx-3 my-2">
+                <MudIconButton Icon="@Icons.Material.Filled.NotificationsActive" Color="Color.Inherit" Edge="Edge.End" @onclick="ToggleSnackbarPopover" />
+            </MudBadge>
+        }
+        else
+        {
+                <MudIconButton Icon="@Icons.Material.Filled.NotificationsNone" Color="Color.Inherit" Edge="Edge.End" @onclick="ToggleSnackbarPopover" />
+        }
+
+    </MudAppBar>
+    <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
+        <NavMenu />
+    </MudDrawer>
+    <MudMainContent>
+        @if (isLoading)
+        {
+            <div class="loading-container">
+                <LoadingComponent />
+            </div>
+        }
+        @Body
+    </MudMainContent>
+</MudLayout>
+
+<MudPopover AnchorOrigin="Origin.TopRight" TransformOrigin="Origin.TopRight" Open="@isSnackbarPopoverOpen" @onclose="CloseSnackbarPopover">
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h6" Class="text-center">Notifications</MudText>
+        <MudList T="string">
+            @foreach (var message in snackbarMessages)
+            {
+                <MudListItem T="string">
+                    <MudStack Row="true" Justify="Justify.SpaceEvenly" AlignItems="AlignItems.Center">
+                        <MudText>@message</MudText>
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" @onclick="() => RemoveSnackbarMessage(message)" />
+                    </MudStack>                    
+                </MudListItem>
+            }
+        </MudList>
+    </MudPaper>
+</MudPopover>
+
+@code {
+    bool _drawerOpen = true;
+    bool isLoading = true;
+    private bool isSnackbarPopoverOpen = false;
+    private List<string> snackbarMessages = new List<string>();
+
+    [Inject]
+    private CustomSnackbarService CustomSnackbar { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        isLoading = false;
+        CustomSnackbar.SnackbarAdded += OnSnackbarAdded;
+    }
+
+    private void OnSnackbarAdded(object? sender, SnackbarEventArgs e)
+    {
+        snackbarMessages.Add(e.Message);
+        StateHasChanged();
+    }
+
+    private void ToggleSnackbarPopover()
+    {
+        isSnackbarPopoverOpen = !isSnackbarPopoverOpen;
+    }
+
+    private void CloseSnackbarPopover()
+    {
+        isSnackbarPopoverOpen = false;
+    }
+
+    private void RemoveSnackbarMessage(string message)
+    {
+        snackbarMessages.Remove(message);
+        StateHasChanged();
+    }
+
+    void DrawerToggle()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+}

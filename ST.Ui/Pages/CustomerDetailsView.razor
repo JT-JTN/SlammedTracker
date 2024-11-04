@@ -1,0 +1,117 @@
+﻿@page "/customers/details/{id:int}"
+
+@inject HttpClient _httpClient
+@inject NavigationManager NavigationManager
+@inject ILogger<CustomerDetailsView> _logger
+
+<PageTitle>Customer Details</PageTitle>
+
+<div class="container">
+    <div class="d-flex">
+        <h3>Customer Details: 
+            @if (customer is not null)
+            {
+                @customer!.FirstName @customer.LastName
+            }
+        </h3> &nbsp;
+        
+        
+        @if (customer is not null)
+        {
+            <EditForm class="float-end form-floating" Model="customer" OnValidSubmit="HandDeleteSubmit">
+                <a href="/customers" class="btn btn-sm btn-primary">Back To List</a> &nbsp; | &nbsp;
+                <a href="@($"/customers/update/{customer!.Id}")" class="btn btn-sm btn-success">Edit</a> &nbsp; | &nbsp;
+                <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+            </EditForm>
+        }
+    </div>
+    
+    @if (customer is not null)
+    {
+        <div class="row">
+            <div class="d-inline-flex row-cols-2 justify-content-between mt-3">
+                <div class="col-6">
+                    First Name: @customer.FirstName
+                </div>
+                <div class="col-6">
+                    Last Name: @customer.LastName
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="d-inline-flex row-cols-2 justify-content-between mt-3">
+                <div class="col-6">
+                    Email: <a href="@($"mailto:{customer.PhoneNumber}")" target="_blank">@customer.EmailAddress</a>
+                </div>
+                <div class="col-6">
+                    Phone: <a href="@($"tel:+1{customer.PhoneNumber}")" target="_blank">@customer.PhoneNumber</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="d-inline-flex row-cols-2 justify-content-between mt-3">
+                <div class="col-6">
+                    Business Customer: @customer.IsBusinessCustomer
+                </div>
+                <div class="col-6">
+                    Business Name: @customer.BusinessName
+                </div>
+            </div>
+        </div>
+    }  
+    else if (errorMessage is not null)
+    {
+        <div class="alert alert-danger" role="alert">
+            <p>@errorMessage</p>
+            <a href="/customers" class="nav-link">Return To List</a>
+        </div>
+    }
+    else
+    {
+        <p>Loading...</p>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int id { get; set; }
+    private CustomerDetailsDto? customer { get; set; }
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/customers/{id}");
+            if (response.IsSuccessStatusCode)
+            {
+                customer = await response.Content.ReadFromJsonAsync<CustomerDetailsDto>();
+            }
+            else
+            {
+                errorMessage = $"Failed to load customer with id {id}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogCritical(ex, "Failed to load customer with id {id}", id);
+            errorMessage = $"An unexpected error occurred: Server Error. Please Contact Your Administrator.";
+        }
+        
+    }
+
+    private async Task HandDeleteSubmit()
+    {
+        var response = await _httpClient.DeleteAsync($"api/customers/{id}");
+        if (response.IsSuccessStatusCode)
+        {
+            NavigationManager.NavigateTo("/customers");
+        }
+        else
+        {
+            errorMessage = $"Failed to delete customer with id {id}";
+        }
+    }
+}
