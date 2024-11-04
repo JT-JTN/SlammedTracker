@@ -4,12 +4,12 @@ using System.Collections.Generic;
 
 namespace ST.Ui.Services
 {
-    public class CustomSnackbarService
+    public class NotificationService
     {
         private readonly ISnackbar _snackbar;
         public event EventHandler<SnackbarEventArgs>? SnackbarAdded;
 
-        public CustomSnackbarService(ISnackbar snackbar)
+        public NotificationService(ISnackbar snackbar)
         {
             _snackbar = snackbar;
         }

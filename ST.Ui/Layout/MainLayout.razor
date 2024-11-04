@@ -61,7 +61,7 @@
     private List<string> snackbarMessages = new List<string>();
 
     [Inject]
-    private CustomSnackbarService CustomSnackbar { get; set; } = default!;
+    private NotificationService CustomSnackbar { get; set; } = default!;
 
     protected override void OnInitialized()
     {

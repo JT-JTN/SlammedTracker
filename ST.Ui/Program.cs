@@ -11,6 +11,6 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:5200") });
 
 builder.Services.AddMudServices();
-builder.Services.AddScoped<CustomSnackbarService>();
+builder.Services.AddScoped<NotificationService>();
 
 await builder.Build().RunAsync();
