@@ -1,13 +1,11 @@
 ﻿using MudBlazor;
-using System;
-using System.Collections.Generic;
 
 namespace ST.Ui.Services
 {
     public class NotificationService
     {
         private readonly ISnackbar _snackbar;
-        public event EventHandler<SnackbarEventArgs>? SnackbarAdded;
+        public event EventHandler<NotificationEventArgs>? NotificationAdded;
 
         public NotificationService(ISnackbar snackbar)
         {
@@ -17,16 +15,16 @@ namespace ST.Ui.Services
         public void Add(string message, Severity severity)
         {
             _snackbar.Add(message, severity);
-            OnSnackbarAdded(new SnackbarEventArgs { Message = message });
+            OnNotificationAdded(new NotificationEventArgs { Message = message });
         }
 
-        protected virtual void OnSnackbarAdded(SnackbarEventArgs e)
+        protected virtual void OnNotificationAdded(NotificationEventArgs e)
         {
-            SnackbarAdded?.Invoke(this, e);
+            NotificationAdded?.Invoke(this, e);
         }
     }
 
-    public class SnackbarEventArgs : EventArgs
+    public class NotificationEventArgs : EventArgs
     {
         public string Message { get; set; } = string.Empty;
     }

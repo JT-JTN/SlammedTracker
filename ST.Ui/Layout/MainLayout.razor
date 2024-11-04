@@ -11,15 +11,15 @@
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" @onclick="DrawerToggle" />
         <MudText Typo="Typo.h5" Class="ml-3">SlammedTracker</MudText>
         <MudSpacer />
-        @if (snackbarMessages.Any())
+        @if (notifications.Any())
         {
-            <MudBadge Content="snackbarMessages.Count" Origin="Origin.TopRight" Bordered="true" Overlap="true" Class="mx-3 my-2">
-                <MudIconButton Icon="@Icons.Material.Filled.NotificationsActive" Color="Color.Inherit" Edge="Edge.End" @onclick="ToggleSnackbarPopover" />
+            <MudBadge Content="notifications.Count" Origin="Origin.TopRight" Bordered="true" Overlap="true" Class="mx-3 my-2">
+                <MudIconButton Icon="@Icons.Material.Filled.NotificationsActive" Color="Color.Inherit" Edge="Edge.End" @onclick="ToggleNotificationPopover" />
             </MudBadge>
         }
         else
         {
-                <MudIconButton Icon="@Icons.Material.Filled.NotificationsNone" Color="Color.Inherit" Edge="Edge.End" @onclick="ToggleSnackbarPopover" />
+                <MudIconButton Icon="@Icons.Material.Filled.NotificationsNone" Color="Color.Inherit" Edge="Edge.End" @onclick="ToggleNotificationPopover" />
         }
 
     </MudAppBar>
@@ -37,16 +37,16 @@
     </MudMainContent>
 </MudLayout>
 
-<MudPopover AnchorOrigin="Origin.TopRight" TransformOrigin="Origin.TopRight" Open="@isSnackbarPopoverOpen" @onclose="CloseSnackbarPopover">
+<MudPopover AnchorOrigin="Origin.TopRight" TransformOrigin="Origin.TopRight" Open="@isSnackbarPopoverOpen" @onclose="CloseNotificationPopover">
     <MudPaper Class="pa-4">
         <MudText Typo="Typo.h6" Class="text-center">Notifications</MudText>
         <MudList T="string">
-            @foreach (var message in snackbarMessages)
+            @foreach (var message in notifications)
             {
                 <MudListItem T="string">
                     <MudStack Row="true" Justify="Justify.SpaceEvenly" AlignItems="AlignItems.Center">
                         <MudText>@message</MudText>
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" @onclick="() => RemoveSnackbarMessage(message)" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" @onclick="() => RemoveNotificationMessage(message)" />
                     </MudStack>                    
                 </MudListItem>
             }
@@ -58,36 +58,36 @@
     bool _drawerOpen = true;
     bool isLoading = true;
     private bool isSnackbarPopoverOpen = false;
-    private List<string> snackbarMessages = new List<string>();
+    private List<string> notifications = new List<string>();
 
     [Inject]
-    private NotificationService CustomSnackbar { get; set; } = default!;
+    private NotificationService Notification { get; set; } = default!;
 
     protected override void OnInitialized()
     {
         isLoading = false;
-        CustomSnackbar.SnackbarAdded += OnSnackbarAdded;
+        Notification.NotificationAdded += OnNotificationAdded;
     }
 
-    private void OnSnackbarAdded(object? sender, SnackbarEventArgs e)
+    private void OnNotificationAdded(object? sender, NotificationEventArgs e)
     {
-        snackbarMessages.Add(e.Message);
+        notifications.Add(e.Message);
         StateHasChanged();
     }
 
-    private void ToggleSnackbarPopover()
+    private void ToggleNotificationPopover()
     {
         isSnackbarPopoverOpen = !isSnackbarPopoverOpen;
     }
 
-    private void CloseSnackbarPopover()
+    private void CloseNotificationPopover()
     {
         isSnackbarPopoverOpen = false;
     }
 
-    private void RemoveSnackbarMessage(string message)
+    private void RemoveNotificationMessage(string message)
     {
-        snackbarMessages.Remove(message);
+        notifications.Remove(message);
         StateHasChanged();
     }
 
