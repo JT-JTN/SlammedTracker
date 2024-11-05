@@ -10,26 +10,33 @@
         <MudText Typo="Typo.h6" Color="Color.Inherit">Customers</MudText>
         <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.PersonAdd" Size="Size.Small" Color="Color.Primary" @onclick="HandleAddCustomer">Add Customer</MudButton>
     </MudStack>
-
-    <MudDataGrid Items="@customers" Filterable="true" SortMode="@SortMode.Single"
-                 Groupable="false" ColumnResizeMode="ResizeMode.Column">
-        <Columns>
-            <PropertyColumn Property="x => x.FirstName" />
-            <PropertyColumn Property="x => x.LastName" />
-            <PropertyColumn Property="x => x.EmailAddress" />
-            <PropertyColumn Property="x => x.PhoneNumber" />
-            <PropertyColumn Property="x => x.BusinessName" />
-            <TemplateColumn CellClass="d-flex justify-end" Filterable="false">
-                <CellTemplate>
-                    <MudStack Row>
-                        <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Details" Color="Color.Info" Size="Size.Small">Details</MudButton> |
-                        <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Edit" Color="Color.Success" Size="Size.Small" @onclick="() => HandleEditCustomer(context.Item.Id)">Edit</MudButton> |
-                        <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small">Delete</MudButton>
-                    </MudStack>
-                </CellTemplate>
-            </TemplateColumn>
-        </Columns>
-    </MudDataGrid>
+    @if (customers is not null)
+    {
+        <MudDataGrid Items="@customers" Filterable="true" SortMode="@SortMode.Single"
+                     Groupable="false" ColumnResizeMode="ResizeMode.Column">
+            <Columns>
+                <PropertyColumn Property="x => x.FirstName" />
+                <PropertyColumn Property="x => x.LastName" />
+                <PropertyColumn Property="x => x.EmailAddress" />
+                <PropertyColumn Property="x => x.PhoneNumber" />
+                <PropertyColumn Property="x => x.BusinessName" />
+                <TemplateColumn CellClass="d-flex justify-end" Filterable="false">
+                    <CellTemplate>
+                        <MudStack Row>
+                            <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Details" Color="Color.Info" Size="Size.Small" @onclick="() => HandleDetailsCustomer(context.Item.Id)">Details</MudButton> |
+                            <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Edit" Color="Color.Success" Size="Size.Small" @onclick="() => HandleEditCustomer(context.Item.Id)">Edit</MudButton> |
+                            <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" @onclick="() => HandleDeleteCustomer(context.Item.Id)">Delete</MudButton>
+                        </MudStack>
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+        </MudDataGrid>
+    }
+    else
+    {
+        <LoadingComponent />
+    }
+    
 </MudPaper>
 
 <style>
@@ -87,6 +94,32 @@
         var parameters = new DialogParameters { ["CustomerId"] = id };
         var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "blur-background" };
         var dialog = DialogService.Show<CustomerEditDialog>("Update Customer", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            await LoadCustomers();
+        }
+    }
+
+    private async Task HandleDetailsCustomer(int id)
+    {
+        var parameters = new DialogParameters { ["CustomerId"] = id };
+        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "blur-background" };
+        var dialog = DialogService.Show<CustomerDetailsDialog>("Customer Details", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            await LoadCustomers();
+        }
+    }
+
+    private async Task HandleDeleteCustomer(int id)
+    {
+        var parameters = new DialogParameters { ["CustomerId"] = id };
+        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "blur-background" };
+        var dialog = DialogService.Show<CustomerDeleteDialog>("Delete Customer", parameters, options);
         var result = await dialog.Result;
 
         if (result != null && !result.Canceled)

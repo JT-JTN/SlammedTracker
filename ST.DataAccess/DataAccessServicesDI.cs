@@ -17,6 +17,8 @@ namespace ST.DataAccess
             services.AddDbContext<STDataContext>(options => options.UseSqlServer(stConnection));
 
             services.AddScoped<ICustomerRepository, CustomerRepository>();
+            services.AddScoped<IColorRepository, ColorRepository>();
+            services.AddScoped<IVehicleRepository, VehicleRepository>();
         }
     }
 }

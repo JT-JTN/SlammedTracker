@@ -1,0 +1,69 @@
+﻿@inject HttpClient _httpClient
+@inject ILogger<CustomerAddDialog> _logger
+@inject ISnackbar Snackbar
+@inject NotificationService CustomSnackbar
+
+<MudDialog>
+    <DialogContent>
+        @if (customer != null)
+        {
+            <MudForm>
+                <MudInputLabel>First Name:</MudInputLabel>
+                <MudInput Label="First Name" Disabled AutoFocus="true" @bind-Value="customer.FirstName" />
+                <MudInputLabel>Last Name</MudInputLabel>
+                <MudInput Label="Last Name:" Disabled @bind-Value="customer.LastName" />
+                <MudInputLabel>Email Address</MudInputLabel>
+                <MudInput Label="Email Address:" Disabled @bind-Value="customer.EmailAddress" />
+                <MudSwitch Label="Business Customer" Disabled @bind-Value="customer.IsBusinessCustomer" />
+            </MudForm>
+        }
+        else
+        {
+            <LoadingComponent />
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton StartIcon="@Icons.Material.Filled.Close" Color="Color.Primary" OnClick="Cancel">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private MudDialogInstance? MudDialog { get; set; }
+    private STCustomer? customer { get; set; }
+    [Parameter]
+    public EventCallback<bool> OnDialogClose { get; set; }
+    [Parameter]
+    public int CustomerId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCustomer(CustomerId);
+    }
+
+    private void Cancel()
+    {
+        MudDialog?.Cancel();
+        OnDialogClose.InvokeAsync(false);
+    }
+
+    private async Task LoadCustomer(int id)
+    {
+        try
+        {
+            var result = await _httpClient.GetFromJsonAsync<STCustomer>($"/api/customers/{id}");
+            customer = result;
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            Snackbar.Add("Customer Not Found In The Database. Please Contact Your Administrator.", Severity.Warning);
+            CustomSnackbar.Add("Customer Not Found In The Database. Please Contact Your Administrator.", Severity.Warning);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"An unexpected error occurred: Server Error. Please Contact Your Administrator.", Severity.Error);
+            CustomSnackbar.Add($"An unexpected error occurred: Server Error. Please Contact Your Administrator.", Severity.Error);
+            _logger.LogError(ex.Message);
+        }
+    }
+}

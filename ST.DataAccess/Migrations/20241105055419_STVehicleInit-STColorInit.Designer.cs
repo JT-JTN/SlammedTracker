@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ST.DataAccess;
 
@@ -11,9 +12,11 @@ using ST.DataAccess;
 namespace ST.DataAccess.Migrations
 {
     [DbContext(typeof(STDataContext))]
-    partial class STDataContextModelSnapshot : ModelSnapshot
+    [Migration("20241105055419_STVehicleInit-STColorInit")]
+    partial class STVehicleInitSTColorInit
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -55,7 +55,6 @@ namespace ST.Api.Controllers
             _logger.LogInformation("Customer retrieved successfully");
             return Ok(customer);
         }
-
         [HttpPut("{id:int}")]
         public async Task<IActionResult> UpdateCustomer(int id, [FromBody] STCustomer customer)
         {
@@ -65,7 +64,6 @@ namespace ST.Api.Controllers
             await _repo.UpdateCustomerAsync(id, customer);
             return NoContent();
         }
-
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteCustomer(int id)
         {

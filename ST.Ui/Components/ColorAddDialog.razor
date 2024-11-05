@@ -1,0 +1,65 @@
+﻿@inject HttpClient _httpClient
+@inject ILogger<CustomerAddDialog> _logger
+@inject ISnackbar Snackbar
+@inject NotificationService CustomSnackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm>
+            <MudInputLabel>Name:</MudInputLabel>
+            <MudInput Label="Name" AutoFocus="true" @bind-Value="color.CName" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton StartIcon="@Icons.Material.Filled.Save" Color="Color.Primary" OnClick="Submit">Save</MudButton>
+        <MudButton StartIcon="@Icons.Material.Filled.Refresh" Color="Color.Secondary" OnClick="Refresh">Refresh</MudButton>
+        <MudButton StartIcon="@Icons.Material.Filled.Cancel" Color="Color.Error" OnClick="Cancel">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private MudDialogInstance? MudDialog { get; set; }
+    private STColor color = new STColor { CName = string.Empty };
+    [Parameter]
+    public EventCallback<bool> OnDialogClose { get; set; }
+
+    private async void Submit()
+    {
+        try
+        {
+            var results = await _httpClient.PostAsJsonAsync("/api/colors", color);
+            if (results.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Color added successfully!", Severity.Success);
+                CustomSnackbar.Add("Color added successfully!", Severity.Success);
+                await OnDialogClose.InvokeAsync(true);
+                MudDialog?.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                Snackbar.Add("Failed to add color. Please try again.", Severity.Warning);
+                CustomSnackbar.Add("Failed to add color. Please try again.", Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogCritical("Failed adding color: {Message}", ex.Message);
+            Snackbar.Add("An unexpected error occurred. Please contact your administrator.", Severity.Error);
+            CustomSnackbar.Add("An unexpected error occurred. Please contact your administrator.", Severity.Error);
+            Refresh();
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog?.Cancel();
+        OnDialogClose.InvokeAsync(false);
+    }
+
+    private void Refresh()
+    {
+        color = new STColor { CName = string.Empty };
+        StateHasChanged();
+    }
+}

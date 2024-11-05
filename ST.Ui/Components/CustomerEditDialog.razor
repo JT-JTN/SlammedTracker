@@ -20,11 +20,21 @@
                 <MudSwitch Label="Business Customer" @bind-Value="customer.IsBusinessCustomer" />
                 <MudInputLabel>Business Name:</MudInputLabel>
                 <MudInput Label="Business Name" @bind-Value="customer.BusinessName" />
+                <MudInputLabel>Billing Address</MudInputLabel>
+                <MudInput Label="Billing Address" @bind-Value="customer.BillingAddress" />
+                <MudInputLabel>Billing Address 2</MudInputLabel>
+                <MudInput Label="Billing Address 2" @bind-Value="customer.BillingAddress2" />
+                <MudInputLabel>Billing City</MudInputLabel>
+                <MudInput Label="Billing City" @bind-Value="customer.BillingCity" />
+                <MudInputLabel>Billing State</MudInputLabel>
+                <MudInput Label="Billing State" @bind-Value="customer.BillingState" />
+                <MudInputLabel>Billing Zip</MudInputLabel>
+                <MudInput Label="Billing Zip" @bind-Value="customer.BillingZip" />
             </MudForm>
         }
         else
         {
-            <MudText>Loading...</MudText>
+            <LoadingComponent />
         }
     </DialogContent>
     <DialogActions>

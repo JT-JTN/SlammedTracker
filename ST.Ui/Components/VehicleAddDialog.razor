@@ -1,0 +1,204 @@
+﻿@inject HttpClient _httpClient
+@inject NotificationService _notification
+@inject ISnackbar Snackbar
+@inject ILogger<VehicleAddDialog> _logger
+
+<MudDialog>
+    <DialogContent>
+        @if (IsLoading == true || customers is null || colors is null)
+        {
+            <LoadingComponent />
+        }
+        else
+        {
+            <MudForm>
+                <MudInputLabel>Customer:</MudInputLabel>
+                <MudSelect T="int" @bind-Value="vehicle.CustomerId" Label="Customer" Variant="Variant.Text">
+                    @foreach (var c in customers)
+                    {
+                        <MudSelectItem T="int" Value="@c.Id">@CustomerFullName(c)</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudInputLabel>VIN:</MudInputLabel>
+                <MudInput Label="VIN" @bind-Value="vehicle.Vin" />
+                <MudSelect T="int" @bind-Value="vehicle.ColorId" Label="Color" Variant="Variant.Text">
+                    @foreach (var color in colors)
+                    {
+                        <MudSelectItem T="int" Value="@color.Id">@ColorFullName(color)</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudInputLabel>Year:</MudInputLabel>
+                <MudInput Label="Year" AutoFocus="true" @bind-Value="vehicle.VYear" />
+                <MudInputLabel>Make:</MudInputLabel>
+                <MudInput Label="Make:" @bind-Value="vehicle.VMake" />
+                <MudInputLabel>Model:</MudInputLabel>
+                <MudInput Label="Model:" @bind-Value="vehicle.VModel" />
+                <MudInputLabel>Trim:</MudInputLabel>
+                <MudInput Label="Trim:" @bind-Value="vehicle.VTrim" />
+            </MudForm>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton StartIcon="@Icons.Material.Filled.Save" Color="Color.Primary" OnClick="HandleValidSubmit">Save</MudButton>
+        <MudButton StartIcon="@Icons.Material.Filled.Refresh" Color="Color.Secondary" OnClick="Refresh">Refresh</MudButton>
+        <MudButton StartIcon="@Icons.Material.Filled.Cancel" Color="Color.Error" OnClick="Cancel">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+
+@code {
+    private STVehicle vehicle { get; set; } = new STVehicle { Vin = string.Empty, VYear = 0, VMake = string.Empty, Customer = new STCustomer() };
+    private IEnumerable<STCustomer>? customers { get; set; }
+    private IEnumerable<STColor>? colors { get; set; }
+    [CascadingParameter]
+    private MudDialogInstance? MudDialog { get; set; }
+    [Parameter]
+    public EventCallback<bool> OnDialogClose { get; set; }
+    private bool IsLoading = true;
+
+    private string CustomerFullName(STCustomer customer) => $"{customer.FirstName} {customer.LastName}";
+    private string ColorFullName(STColor color) => $"{color.CName}";
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        await LoadColors();
+        await LoadCustomers();
+        IsLoading = false;
+    }
+
+    private async Task LoadCustomers()
+    {
+        _notification.Add("Loading customers...", Severity.Info);
+
+        try
+        {
+            var response = await _httpClient.GetAsync("/api/customers");
+            if (response.IsSuccessStatusCode)
+            {
+                var cResult = await response.Content.ReadFromJsonAsync<IEnumerable<STCustomer>>();
+                if (cResult != null)
+                {
+                    customers = cResult;
+                    _notification.Add("Customers loaded", Severity.Success);
+                }
+                else
+                {
+                    _notification.Add("Results from getting customers was null", Severity.Warning);
+                    _logger.LogWarning("Results from getting customers was null");
+                }
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                _notification.Add("Bad request when getting customers", Severity.Warning);
+                _logger.LogWarning("Bad request when getting customers");
+            }
+        }
+        catch (Exception ex)
+        {
+            _notification.Add("Server Error: Please Contact Your Administrator", Severity.Error);
+            _logger.LogError($"Error loading customers: {ex} | {ex.Message}");
+        }
+
+        _notification.Add("Finished loading customers...", Severity.Info);
+    }
+
+    private async Task LoadColors()
+    {
+        _notification.Add("Loading colors...", Severity.Info);
+
+        try
+        {
+            var response = await _httpClient.GetAsync("/api/colors");
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<IEnumerable<STColor>>();
+                if (result != null)
+                {
+                    colors = result;
+                    _notification.Add("Colors loaded", Severity.Success);
+                    _logger.LogInformation($"Loaded {colors.Count()} colors.");
+                }
+                else
+                {
+                    _notification.Add("Results from getting colors was null", Severity.Warning);
+                    _logger.LogWarning("Results from getting colors was null");
+                }
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                _notification.Add("Bad request when getting colors", Severity.Warning);
+                _logger.LogWarning("Bad request when getting colors");
+            }
+        }
+        catch (Exception ex)
+        {
+            _notification.Add("Server Error: Please Contact Your Administrator", Severity.Error);
+            _logger.LogError($"Error loading colors: {ex} | {ex.Message}");
+        }
+
+        _notification.Add("Finished loading colors...", Severity.Info);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        _notification.Add("Adding vehicle...", Severity.Info);
+
+        try
+        {
+            if (vehicle is null)
+            {
+                _notification.Add("Vehicle is null", Severity.Warning);
+                Snackbar.Add("Vehicle is null", Severity.Warning);
+                _logger.LogWarning("Vehicle is null");
+                return;
+            }
+            var response = await _httpClient.PostAsJsonAsync<STVehicle>("/api/vehicles", vehicle);
+            if (response.IsSuccessStatusCode)
+            {
+                _notification.Add($"Successfully added vehicle: {vehicle.Vin}", Severity.Success);
+                Snackbar.Add($"Successfully added vehicle: {vehicle.Vin}", Severity.Success);
+                await OnDialogClose.InvokeAsync(true);
+                MudDialog?.Close(DialogResult.Ok(true));
+
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                _notification.Add($"Bad request when adding vehicle: {response.StatusCode.ToString()}", Severity.Warning);
+                _logger.LogWarning($"Bad request when adding vehicle: {response.StatusCode.ToString()}");
+                Snackbar.Add($"Bad request when adding vehicle: {response.StatusCode.ToString()}", Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            _notification.Add("Server Error: Please Contact Your Administrator", Severity.Error);
+            _logger.LogError($"Error adding vehicle: {ex} | {ex.Message}");
+            Snackbar.Add("An unexpected error occured. Please contact your administrator.", Severity.Error);
+            Refresh();
+        }
+
+        _notification.Add("Finished adding vehicle...", Severity.Info);
+    }
+
+    private void Cancel()
+    {
+        MudDialog?.Cancel();
+        OnDialogClose.InvokeAsync(false);
+    }
+
+    private async void Refresh()
+    {
+        IsLoading = true;
+        vehicle = new STVehicle
+            {
+                Vin = string.Empty,
+                VYear = 0,
+                VMake = string.Empty,
+                Customer = new STCustomer()
+            };
+        await LoadCustomers();
+        await LoadColors();
+        StateHasChanged();
+        IsLoading = false;
+    }
+}

@@ -1,0 +1,90 @@
+﻿@inject HttpClient _httpClient
+@inject ILogger<CustomerAddDialog> _logger
+@inject ISnackbar Snackbar
+@inject NotificationService CustomSnackbar
+
+<MudDialog>
+    <DialogContent>
+        @if (vehicle != null)
+        {
+            <MudPaper Style="padding: 2em;" Elevation="0">
+                <MudCard Style="max-width: 600px; margin: auto;">
+                    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="200px" Width="100%" />
+                    <MudCardContent>
+                        <MudText Typo="Typo.h5" GutterBottom="true">@vehicle.VMake @vehicle.VModel (@vehicle.VYear)</MudText>
+                        <MudText Typo="Typo.subtitle1" GutterBottom="true">VIN: @vehicle.Vin</MudText>
+                        <MudText Typo="Typo.subtitle1" GutterBottom="true">Color: @vehicle.Color.CName</MudText>
+                        <MudText Typo="Typo.subtitle1" GutterBottom="true">Trim Level: @vehicle.VTrim</MudText>
+                        <MudText Typo="Typo.subtitle1" GutterBottom="true">Customer: @vehicle.Customer.FirstName @vehicle.Customer.LastName</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Filled" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Close" @onclick="Cancel">Close</MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete" @onclick="() => HandleDeleteVehicle(vehicle.Id)">Delete</MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudPaper>
+        }
+        else
+        {
+            <LoadingComponent />
+        }
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private MudDialogInstance? MudDialog { get; set; }
+    private VehicleDetailsDto? vehicle { get; set; }
+    [Parameter]
+    public EventCallback<bool> OnDialogClose { get; set; }
+    [Parameter]
+    public int VehicleId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadVehicle(VehicleId);
+    }
+
+    private void Cancel()
+    {
+        MudDialog?.Cancel();
+        OnDialogClose.InvokeAsync(false);
+    }
+
+    private async Task LoadVehicle(int id)
+    {
+        try
+        {
+            var result = await _httpClient.GetFromJsonAsync<VehicleDetailsDto>($"/api/vehicles/{id}");
+            vehicle = result;
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            Snackbar.Add("Customer Not Found In The Database. Please Contact Your Administrator.", Severity.Warning);
+            CustomSnackbar.Add("Customer Not Found In The Database. Please Contact Your Administrator.", Severity.Warning);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"An unexpected error occurred: Server Error. Please Contact Your Administrator.", Severity.Error);
+            CustomSnackbar.Add($"An unexpected error occurred: Server Error. Please Contact Your Administrator.", Severity.Error);
+            _logger.LogError(ex.Message);
+        }
+    }
+
+    private async Task HandleDeleteVehicle(int id)
+    {
+        var result = await _httpClient.DeleteAsync($"/api/vehicles/{id}");
+        if (result.IsSuccessStatusCode)
+        {
+            Snackbar.Add($"Vehicle {vehicle.Vin} Delete Successfully", Severity.Success);
+            CustomSnackbar.Add($"Vehicle {vehicle.Vin} Delete Successfully", Severity.Success);
+            await OnDialogClose.InvokeAsync(true);
+            MudDialog?.Close(DialogResult.Ok(true));
+        }
+        else
+        {
+            Snackbar.Add($"Vehicle {vehicle.Vin} Delete Failed", Severity.Error);
+            CustomSnackbar.Add($"Vehicle {vehicle.Vin} Delete Failed", Severity.Error);
+        }
+    }
+}

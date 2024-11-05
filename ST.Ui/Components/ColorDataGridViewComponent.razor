@@ -1,0 +1,93 @@
+﻿@inject HttpClient _httpClient
+@inject NavigationManager NavigationManager
+@inject ILogger<CustomerDataGridViewComponent> _logger
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NotificationService CustomSnackbar
+
+<MudPaper Style="padding: 2em;" Elevation="0">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" Class="py-3">
+        <MudText Typo="Typo.h6" Color="Color.Inherit">Colors</MudText>
+        <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.PersonAdd" Size="Size.Small" Color="Color.Primary" @onclick="HandleAddColor">Add Color</MudButton>
+    </MudStack>
+
+    <MudDataGrid Items="@colors" Filterable="true" SortMode="@SortMode.Single"
+                 Groupable="false" ColumnResizeMode="ResizeMode.Column">
+        <Columns>
+            <PropertyColumn Property="x => x.CName" />
+            <TemplateColumn CellClass="d-flex justify-end" Filterable="false">
+                <CellTemplate>
+                    <MudStack Row>
+                        <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Details" Color="Color.Info" Size="Size.Small">Details</MudButton> |
+                        <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Edit" Color="Color.Success" Size="Size.Small" @onclick="() => HandleEditColor(context.Item.Id)">Edit</MudButton> |
+                        <MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small">Delete</MudButton>
+                    </MudStack>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </MudDataGrid>
+</MudPaper>
+
+<style>
+    .blur-background {
+        backdrop-filter: blur(5px);
+    }
+</style>
+
+@code {
+    private IEnumerable<STColor> colors { get; set; } = [];
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadColors();
+    }
+
+    private async Task LoadColors()
+    {
+        errorMessage = null!;
+
+        try
+        {
+            var result = await _httpClient.GetFromJsonAsync<IEnumerable<STColor>>("/api/colors");
+            colors = result ?? new List<STColor>();
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            Snackbar.Add("No Colors Found In The Database. Please Contact Your Administrator.", Severity.Warning);
+            CustomSnackbar.Add("No Colors Found In The Database. Please Contact Your Administrator.", Severity.Warning);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"An unexpected error occurred: Server Error. Please Contact Your Administrator.", Severity.Error);
+            CustomSnackbar.Add($"An unexpected error occurred: Server Error. Please Contact Your Administrator.", Severity.Error);
+            _logger.LogError(ex, errorMessage);
+        }
+    }
+
+    private async Task HandleAddColor()
+    {
+        var parameters = new DialogParameters();
+        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "blur-background" };
+        var dialog = DialogService.Show<ColorAddDialog>("Add Color", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            await LoadColors();
+        }
+    }
+
+    private async Task HandleEditColor(int id)
+    {
+        var parameters = new DialogParameters { ["ColorId"] = id };
+        var options = new DialogOptions { CloseOnEscapeKey = true, BackgroundClass = "blur-background" };
+        var dialog = DialogService.Show<CustomerEditDialog>("Update Color", parameters, options);  // Fix This Once The Edit Dialog Has Been Created
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            await LoadColors();
+        }
+    }
+}

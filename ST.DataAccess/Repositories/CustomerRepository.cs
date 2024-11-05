@@ -84,7 +84,7 @@ namespace ST.DataAccess.Repositories
             catch (DbUpdateException ex)
             {
                 _logger.LogWarning("Deletion of customer: {id} failed", id);
-                throw new Exception("Failed to delete customer");
+                throw new Exception("Failed to delete customer: {ex.Message}", ex);
             }
         }
 
@@ -192,6 +192,11 @@ namespace ST.DataAccess.Repositories
             customerToUpdate.EmailAddress = customer.EmailAddress;
             customerToUpdate.PhoneNumber = customer.PhoneNumber;
             customerToUpdate.IsBusinessCustomer = customer.IsBusinessCustomer;
+            customerToUpdate.BillingAddress = customer.BillingAddress;
+            customerToUpdate.BillingAddress2 = customer.BillingAddress2;
+            customerToUpdate.BillingCity = customer.BillingCity;
+            customerToUpdate.BillingState = customer.BillingState;
+            customerToUpdate.BillingZip = customer.BillingZip;
 
             if (customer.IsBusinessCustomer.Equals(false))
             {
